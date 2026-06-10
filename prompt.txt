@@ -1,0 +1,105 @@
+PROMPT 1:
+Write a menu driven program for a 2d graphics editor in C using * and _. Write functions to draw objects: circle, rectangle, line, and triangle. You should be able to add objects to the picture, delete objects from the picture. Use a 2d array of characters to store the picture. Write a function to display the picture. Additionally use the ncurses package to create menus and draw pictures. Give a unique code for this mini project.
+
+
+RESPONSE 1:
+Generated complete C code with the following structure:
+c#define ROWS 30
+#define COLS 80
+#define MAX_OBJECTS 20
+
+char canvas[ROWS][COLS];
+
+typedef struct {
+    int type, active;
+    int x1, y1, x2, y2, x3, y3;
+    int r;
+    char symbol;
+} Object;
+
+void clear_canvas(void);
+void set_pixel(int r, int c, char ch);
+void draw_circle(int cx, int cy, int radius, char ch);
+void draw_line(int r1, int c1, int r2, int c2, char ch);
+void draw_rectangle(int r1, int c1, int r2, int c2, char ch);
+void draw_triangle(int r1,int c1,int r2,int c2,int r3,int c3,char ch);
+void redraw_all(void);
+int  add_object(Object obj);
+void delete_object(int idx);
+void display_canvas(void);
+Menu options: Add Circle, Add Rectangle, Add Line, Add Triangle, Delete Object, List Objects, Display Picture, Clear Canvas, Exit.
+
+PROMPT 2:
+Add ncurses functions to the code. Give the whole code.
+
+
+RESPONSE 2:
+Rewrote program with full ncurses UI. Key additions:
+c#include <pdcurses.h>
+
+
+// Colour pairs
+init_pair(CP_TITLE,  COLOR_YELLOW, COLOR_BLUE);
+init_pair(CP_SELECT, COLOR_BLACK,  COLOR_CYAN);
+init_pair(CP_STATUS, COLOR_BLACK,  COLOR_GREEN);
+init_pair(CP_STAR,   COLOR_RED,    COLOR_BLACK);
+init_pair(CP_UNDER,  COLOR_YELLOW, COLOR_BLACK);
+
+// ncurses window functions used
+initscr();
+start_color();
+newwin(height, width, start_y, start_x);
+box(win, 0, 0);
+keypad(win, TRUE);
+wgetch(win);
+mvwprintw(win, y, x, "text");
+wattron(win, COLOR_PAIR(id) | A_BOLD);
+wrefresh(win);
+delwin(win);
+endwin();
+Each shape has its own pop-up input form window. Arrow keys + number keys both work for menu navigation.
+
+PROMPT 3:
+The program is giving ncurses.h no such file or directory error on Windows with MinGW.
+
+
+RESPONSE 3:
+PDCurses is the Windows equivalent of ncurses. Fixed by changing the include:
+c// Changed from:
+#include <ncurses.h>
+// To:
+#include <pdcurses.h>
+Installed PDCurses via MSYS2:
+bashpacman -S mingw-w64-ucrt-x86_64-pdcurses
+Compile command for Windows:
+bashgcc 2d_graphics.c -o gfx.exe -I/ucrt64/include -L/ucrt64/lib -lpdcurses -lm
+
+PROMPT 4:
+Arrow keys are not working in the menu navigation on Windows.
+
+
+RESPONSE 4:
+Fixed arrow key handling for PDCurses on Windows by adding ESC sequence detection and W/S key alternatives:
+craw();
+keypad(mw, TRUE);
+
+int key = wgetch(mw);
+
+// PDCurses on Windows sends ESC sequences for arrows
+if(key == 27){
+    nodelay(mw, TRUE);
+    int k2 = wgetch(mw);
+    int k3 = wgetch(mw);
+    nodelay(mw, FALSE);
+    if(k2=='[' && k3=='A') key = KEY_UP;
+    else if(k2=='[' && k3=='B') key = KEY_DOWN;
+}
+
+// Added W/S as alternative navigation keys
+case KEY_UP:  case 'w': case 'W':
+    highlight=(highlight-1+MENU_N)%MENU_N; break;
+case KEY_DOWN: case 's': case 'S':
+    highlight=(highlight+1)%MENU_N; break;
+
+// Added \r for Windows Enter key
+case '\n': case '\r': case KEY_ENTER: case ' ':
